@@ -5,5 +5,6 @@ data class NewsDetailDto(
     val title: String,
     val url: String,
     val byline: String?,
-    val abstract: String
+    val abstract: String,
+    val description: String
 )

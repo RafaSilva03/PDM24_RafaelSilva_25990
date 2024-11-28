@@ -49,6 +49,9 @@ android {
 
 dependencies {
 
+
+    implementation(libs.livedata)
+    implementation(libs.viewmodel)
     implementation(libs.ui)
     implementation(libs.runtime1)
     implementation(libs.runtime2)

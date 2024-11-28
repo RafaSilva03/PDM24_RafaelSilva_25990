@@ -16,9 +16,15 @@ coil = "2.5.0"
 compose = "1.4.0"
 navigation = "2.8.4"
 material3 = "1.1.0"
+viewmodel = "2.5.1"
+livedata = "2.5.1"
+
 
 [libraries]
 
+
+livedata = { module = "androidx.lifecycle:lifecycle-livedata-ktx", version.ref = "livedata" }
+viewmodel = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "viewmodel" }
 ui = { module = "androidx.compose.ui:ui", version.ref = "compose" }
 runtime1 = { module = "androidx.compose.runtime:runtime-livedata", version.ref = "compose" }
 runtime2 = { module = "androidx.compose.runtime:runtime", version.ref = "compose" }
