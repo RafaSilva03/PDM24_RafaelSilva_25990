@@ -1,5 +1,8 @@
 package presentation.news_list
+import domain.model.News
 
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
@@ -19,7 +22,7 @@ import coil.compose.rememberImagePainter
 import androidx.navigation.NavController
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import domain.model.News
+
 
 @Composable
 fun NewsListItem(newsItem: News, navController: NavController) {
@@ -69,7 +72,8 @@ fun NewsListItem(newsItem: News, navController: NavController) {
 
 @Composable
 fun NewsListScreen(viewModel: NewsListViewModel, navController: NavController) {
-    val news by viewModel.news.observeAsState(emptyList())
+    val news = viewModel.news.observeAsState(emptyList()).value
+
 
     // Carrega as notícias ao abrir a tela
     LaunchedEffect(Unit) {

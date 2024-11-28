@@ -12,7 +12,7 @@ class NewsListViewModel(
     private val getNewsUseCase: GetNewsUseCase
 ) : ViewModel() {
     private val _news = MutableLiveData<List<News>>()
-    val news: LiveData<List<News>> = _news
+    val news: LiveData<List<News>> get() = _news
 
     fun fetchNews(section: String) {
         viewModelScope.launch {

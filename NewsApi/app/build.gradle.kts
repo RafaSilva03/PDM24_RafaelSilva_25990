@@ -4,16 +4,23 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+val apiKey: String = rootProject.file("local.properties").readLines()
+    .find { it.startsWith("NYT_API_KEY=") }
+    ?.split("=")?.get(1)
+    ?: throw GradleException("NYT_API_KEY not found in local.properties")
+
 android {
     namespace = "com.example.newsapi"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.example.newsapi"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
+
+        buildConfigField("String", "NYT_API_KEY", "\"$apiKey\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -36,13 +43,19 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
 dependencies {
 
-    implementation (libs.okhttp3)
-    implementation (libs.coil)
+    implementation(libs.ui)
+    implementation(libs.runtime1)
+    implementation(libs.runtime2)
+    implementation(libs.material3)
+    implementation(libs.navigation)
+    implementation(libs.okhttp3)
+    implementation(libs.coil)
     implementation(libs.retrofit)
     implementation(libs.gson)
     implementation(libs.androidx.core.ktx)
@@ -54,6 +67,8 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.navigation.runtime.ktx)
+
+    // Test and debug dependencies
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

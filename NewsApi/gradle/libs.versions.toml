@@ -13,8 +13,17 @@ gson = "2.9.0"
 okhttp3 = "4.10.0"
 navigationRuntimeKtx = "2.8.4"
 coil = "2.5.0"
+compose = "1.4.0"
+navigation = "2.8.4"
+material3 = "1.1.0"
 
 [libraries]
+
+ui = { module = "androidx.compose.ui:ui", version.ref = "compose" }
+runtime1 = { module = "androidx.compose.runtime:runtime-livedata", version.ref = "compose" }
+runtime2 = { module = "androidx.compose.runtime:runtime", version.ref = "compose" }
+material3 = { module = "androidx.compose.material3:material3", version.ref = "material3" }
+navigation = { module = "androidx.navigation:navigation-compose", version.ref = "navigation" }
 coil = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
 okhttp3 = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp3" }
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
