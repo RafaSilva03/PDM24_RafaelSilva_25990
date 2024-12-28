@@ -5,6 +5,7 @@ import domain.repository.NewsRepository
 import domain.model.News
 import com.example.newsapi.BuildConfig
 import android.util.Log
+import data.remote.model.ArticleDoc
 
 class NewsRepositoryImpl(
     private val api: NewsApi
@@ -13,13 +14,12 @@ class NewsRepositoryImpl(
     override suspend fun getNews(section: String): List<News> {
         val apiKey = BuildConfig.NYT_API_KEY
 
-        // Fazendo a chamada à API
+        Log.d("API_KEY_TEST", "Key being sent: $apiKey")
+
         val response = api.getNews(section = section, apiKey = apiKey)
 
-        // Logando a resposta da API para depuração
         Log.d("NewsApiResponse", response.toString())
 
-        // Convertendo a resposta para a lista de News
         return response.results.map { dto ->
             News(
                 id =  dto.id,
@@ -29,6 +29,13 @@ class NewsRepositoryImpl(
                 abstract = dto.abstract,
                 description = dto.description
             )
+        }.also {
+            it.forEach { news -> Log.d("Repository", "News ID: ${news.id}, Title: ${news.title}, abstract: ${news.abstract}") }
         }
+    }
+
+    override suspend fun getArticleDetails(query: String): ArticleDoc? {
+        val response = api.searchArticle(query, BuildConfig.NYT_API_KEY)
+        return response.response.docs.firstOrNull()
     }
 }

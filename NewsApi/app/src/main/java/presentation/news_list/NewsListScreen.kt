@@ -4,40 +4,48 @@ import android.util.Log
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Card
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.google.gson.Gson
 import domain.model.News
 
 @Composable
 fun NewsListScreen(viewModel: NewsListViewModel, navController: NavController) {
-    // Observe o LiveData da lista de notícias usando observeAsState
-    val newsList by viewModel.news.observeAsState(emptyList())
 
-    // Verifique se a lista de notícias está vazia, e faça o fetch das notícias se necessário
+    val newsList by viewModel.news.observeAsState(initial = emptyList())
+
     LaunchedEffect(Unit) {
-        viewModel.fetchNews("home")  // ou qualquer seção que você deseje
+        viewModel.fetchNews("home")
+        newsList.forEach { news ->
+            Log.d("NewsListScreen", "ID: ${news.id}, Title: ${news.title}")
+        }
     }
 
-    // Exibe a lista de notícias
-    Column(modifier = Modifier.fillMaxWidth()) {
+    Column(modifier = Modifier.fillMaxSize()) {
         newsList.forEach { news ->
             Card(
-                modifier = Modifier.fillMaxWidth().clickable {
-                    // Serializa o objeto News em JSON
-                    val newsJson = Gson().toJson(news)
-                    // Navega para a tela de detalhes, passando o JSON
-                    navController.navigate("news_detail/$newsJson")
-                }
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp)
+                    .clickable {
+                        navController.navigate("news_detail/${news.title}")
+                    }
             ) {
-                // Exibe o título da notícia
-                Text(text = news.title)  // Corrige o erro de ambiguidade, garantindo que 'title' é uma String
+                Text(
+                    text = news.title,
+                    modifier = Modifier.padding(16.dp),
+                    style = MaterialTheme.typography.bodyLarge
+                )
             }
         }
     }

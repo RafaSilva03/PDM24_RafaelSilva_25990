@@ -10,6 +10,7 @@ import androidx.compose.material3.Surface
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import presentation.news_list.NewsListScreen
@@ -20,16 +21,20 @@ import androidx.lifecycle.ViewModelProvider
 import presentation.news_list.NewsListViewModel
 import presentation.news_list.NewsListViewModelFactory
 import com.google.gson.Gson
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+import androidx.lifecycle.viewmodel.compose.viewModel
 import domain.use_case.GetNewsUseCase
 import data.repository.NewsRepositoryImpl
 import data.RetrofitClient
+import androidx.compose.material3.Text
 
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MainScreen()  // Chama a função MainScreen onde você configura a navegação
+            MainScreen()
         }
     }
 }
@@ -37,34 +42,35 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainScreen() {
     NewsAPITheme {
-        // Defina o NavController
         val navController = rememberNavController()
 
-        // Defina o layout
-        Surface(modifier = androidx.compose.ui.Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-            // Configura a navegação entre as telas
+
+        val newsApi = RetrofitClient.getNewsApi()
+        val newsRepository = NewsRepositoryImpl(newsApi)
+        val getNewsUseCase = GetNewsUseCase(newsRepository)
+
+        val newsListViewModel: NewsListViewModel = ViewModelProvider(
+            LocalContext.current as ComponentActivity,
+            NewsListViewModelFactory(getNewsUseCase, newsRepository)
+        ).get(NewsListViewModel::class.java)
+
+        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             NavHost(navController = navController, startDestination = "news_list") {
                 composable("news_list") {
-                    // Obtém a instância do Retrofit e cria o repositório
-                    val newsApi = RetrofitClient.getNewsApi()
-                    val newsRepository = NewsRepositoryImpl(newsApi)
-                    val getNewsUseCase = GetNewsUseCase(newsRepository)
-
-                    // Criando o ViewModel usando a ViewModelProvider e a fábrica personalizada
-                    val newsListViewModel: NewsListViewModel = ViewModelProvider(
-                        LocalContext.current as ComponentActivity,
-                        NewsListViewModelFactory(getNewsUseCase) // Passando o getNewsUseCase aqui
-                    ).get(NewsListViewModel::class.java)
-
-                    // Passando o ViewModel para a NewsListScreen
+                    // Passa o ViewModel para a tela de lista
                     NewsListScreen(viewModel = newsListViewModel, navController = navController)
                 }
-                composable("news_detail/{newsJson}") { backStackEntry ->
-                    // Recupera o JSON da notícia
-                    val newsJson = backStackEntry.arguments?.getString("newsJson")
-                    val news = Gson().fromJson(newsJson, News::class.java)
-                    // Passa a notícia inteira para a tela de detalhes
-                    NewsDetailScreen(news = news)
+                composable(
+                    route = "news_detail/{title}",
+                    arguments = listOf(navArgument("title") { type = NavType.StringType })
+                ) { backStackEntry ->
+                    val title = backStackEntry.arguments?.getString("title")
+                    if (!title.isNullOrEmpty()) {
+                        // Passa o mesmo ViewModel para a tela de detalhes
+                        NewsDetailScreen(title = title, viewModel = newsListViewModel)
+                    } else {
+                        Text("Erro: título da notícia não foi encontrado.")
+                    }
                 }
             }
         }
