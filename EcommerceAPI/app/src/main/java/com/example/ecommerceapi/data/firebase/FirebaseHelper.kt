@@ -1,7 +1,10 @@
 package com.example.ecommerceapi.data.firebase
 
+import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.tasks.await
+import com.example.ecommerceapi.Model.Product
 
 class FirebaseHelper {
 
@@ -70,6 +73,34 @@ class FirebaseHelper {
                 } else {
                     onFailure(task.exception ?: Exception("Erro ao enviar email de redefinição de senha."))
                 }
+            }
+    }
+
+    fun getProductsByCategory(category: String, onSuccess: (List<Product>) -> Unit, onFailure: (Exception) -> Unit) {
+        db.collection("Products")
+            .whereEqualTo("Category", category)
+            .get()
+            .addOnSuccessListener { result ->
+                val products = result.mapNotNull { document ->
+                    try {
+                        Product(
+                            name = document.getString("Name") ?: "",
+                            price = document.getDouble("Price") ?: 0.0,
+                            imageUrl = document.getString("ImageUrl") ?: "",
+                            category = document.getString("Category") ?: "",
+                            brand = document.getString("Brand") ?: ""
+                        )
+                    } catch (e: Exception) {
+                        Log.e("FirebaseHelper", "Erro ao mapear produto: ${e.message}")
+                        null
+                    }
+                }
+                Log.d("FirebaseHelper", "Produtos carregados: $products")
+                onSuccess(products)
+            }
+            .addOnFailureListener { exception ->
+                Log.e("FirebaseHelper", "Erro ao buscar produtos: ${exception.message}")
+                onFailure(exception)
             }
     }
 }
