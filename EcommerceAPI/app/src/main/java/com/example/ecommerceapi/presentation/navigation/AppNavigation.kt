@@ -9,6 +9,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -17,10 +18,15 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.ecommerceapi.data.firebase.FirebaseHelper
+import com.example.ecommerceapi.Model.CartProduct
 import com.example.ecommerceapi.presentation.login.LoginScreen
 import com.example.ecommerceapi.presentation.register.RegisterScreen
 import com.example.ecommerceapi.presentation.menu.ComprarScreen
 import com.example.ecommerceapi.presentation.menu.ProductsScreen
+import com.example.ecommerceapi.presentation.menu.ProductDetailsScreen
+import com.example.ecommerceapi.presentation.menu.CartScreen
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun AppNavigation(navController: NavHostController) {
@@ -28,7 +34,7 @@ fun AppNavigation(navController: NavHostController) {
 
     NavHost(
         navController = navController,
-        startDestination = "comprar",
+        startDestination = "login",
         modifier = Modifier
     ) {
         // Tela de Login
@@ -67,10 +73,6 @@ fun AppNavigation(navController: NavHostController) {
             )
         }
 
-        // Tela de Carrinho
-        composable("carrinho") {
-
-        }
 
         // Tela de Perfil
         composable("perfil") {
@@ -79,10 +81,92 @@ fun AppNavigation(navController: NavHostController) {
 
         composable("products/{category}") { backStackEntry ->
             val category = backStackEntry.arguments?.getString("category") ?: ""
-            Log.d("Categoria", "Navegando para categoria: $category") // Debug
             ProductsScreen(
                 category = category,
+                onBackClick = { navController.popBackStack() },
+                onProductClick = { product ->
+                    Log.d("Navegação", "ID: ${product.id}, Name: ${product.name}")
+                    navController.navigate("productDetails/${product.id}/${product.name}/${product.price}")
+                }
+            )
+        }
+
+        composable("productDetails/{productId}/{productName}/{productPrice}") { backStackEntry ->
+            val productId = backStackEntry.arguments?.getString("productId")!!.toInt()
+            val productName = backStackEntry.arguments?.getString("productName") ?: ""
+            val productPrice = backStackEntry.arguments?.getString("productPrice")!!.toDouble()
+            ProductDetailsScreen(
+                productId = productId,
+                productName = productName,
+                productPrice = productPrice,
                 onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable("Carrinho") {
+            val firebaseHelper = FirebaseHelper()
+            val cartProducts = remember { mutableStateOf<List<CartProduct>>(emptyList()) }
+            val totalPrice = remember { mutableStateOf(0.0) }
+            val currentUserEmail = FirebaseAuth.getInstance().currentUser?.email
+
+            if (currentUserEmail.isNullOrEmpty()) {
+                // Mostre uma mensagem ou redirecione o usuário para o login
+                Text("Usuário não autenticado. Por favor, faça login.")
+                return@composable
+            }
+
+            // Busca ou cria o CartID para o usuário
+            LaunchedEffect(Unit) {
+                firebaseHelper.getUserCartId(
+                    userEmail = currentUserEmail,
+                    onSuccess = { cartId ->
+                        if (cartId != null) {
+                            // Busca os itens do carrinho usando o CartID
+                            firebaseHelper.getCartProducts(
+                                cartId = cartId,
+                                onSuccess = { products ->
+                                    cartProducts.value = products
+                                    totalPrice.value = products.sumOf { it.product.price * it.quantity }
+                                },
+                                onFailure = {
+                                    cartProducts.value = emptyList() // Mostre uma mensagem de erro ou deixe vazio
+                                }
+                            )
+                        } else {
+                            // Se não existir um CartID, cria um novo
+                            firebaseHelper.createCartForUser(
+                                userEmail = currentUserEmail,
+                                onSuccess = { newCartId ->
+                                    // Carrinho criado, agora busca os itens do carrinho (provavelmente vazio)
+                                    firebaseHelper.getCartProducts(
+                                        cartId = newCartId,
+                                        onSuccess = { products ->
+                                            cartProducts.value = products
+                                            totalPrice.value = products.sumOf { it.product.price * it.quantity }
+                                        },
+                                        onFailure = {
+                                            cartProducts.value = emptyList() // Mostre uma mensagem de erro ou deixe vazio
+                                        }
+                                    )
+                                },
+                                onFailure = { exception ->
+                                    Log.e("Carrinho", "Erro ao criar carrinho: ${exception.message}")
+                                }
+                            )
+                        }
+                    },
+                    onFailure = { exception ->
+                        Log.e("Carrinho", "Erro ao obter CartID: ${exception.message}")
+                    }
+                )
+            }
+
+            CartScreen(
+                cartItems = cartProducts.value,
+                totalPrice = totalPrice.value,
+                onCheckoutClick = {
+                    // Navegação para o processo de pagamento ou confirmação
+                }
             )
         }
 

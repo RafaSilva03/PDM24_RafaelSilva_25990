@@ -20,6 +20,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
@@ -28,7 +30,11 @@ import com.example.ecommerceapi.Model.Product
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProductsScreen(category: String, onBackClick: () -> Unit) {
+fun ProductsScreen(
+    category: String,
+    onBackClick: () -> Unit,
+    onProductClick: (Product) -> Unit // Callback para clique no produto
+) {
     val firebaseHelper = remember { FirebaseHelper() }
     var products by remember { mutableStateOf<List<Product>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
@@ -85,7 +91,9 @@ fun ProductsScreen(category: String, onBackClick: () -> Unit) {
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     items(products) { product ->
-                        ProductItem(product)
+                        ProductItem(product) { clickedProduct ->
+                            onProductClick(clickedProduct) // Chama o callback
+                        }
                     }
                 }
             }
@@ -95,14 +103,14 @@ fun ProductsScreen(category: String, onBackClick: () -> Unit) {
 
 
 @Composable
-fun ProductItem(product: Product) {
+fun ProductItem(product: Product, onClick: (Product) -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .aspectRatio(1f)
-            .clickable { /* Ação ao clicar no produto */ },
+            .clickable { onClick(product) },
         shape = RoundedCornerShape(8.dp),
-        elevation = CardDefaults.cardElevation(4.dp) // Substitui o valor de `elevation`
+        elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Column(
             modifier = Modifier.padding(8.dp),
