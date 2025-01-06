@@ -13,9 +13,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -25,13 +25,59 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.ecommerceapi.Model.CartProduct
 import com.example.ecommerceapi.data.firebase.FirebaseHelper
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CartScreen(
     cartItems: List<CartProduct>,
     totalPrice: Double,
-    onCheckoutClick: () -> Unit
+    onCheckoutClick: () -> Unit,
+    cartId: Int,
+    onBackClick: () -> Unit,
+    onExportCartClick: () -> Unit,
+    onImportCartClick: (Int) -> Unit
 ) {
+    var showImportDialog by remember { mutableStateOf(false) }
+    var showCartIdDialog by remember { mutableStateOf(false) }
+    var exportCartId by remember { mutableStateOf(0) }
+    var importCartId by remember { mutableStateOf("") }
+
     Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("") },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Voltar")
+                    }
+                },
+                actions = {
+                    var menuExpanded by remember { mutableStateOf(false) }
+                    IconButton(onClick = { menuExpanded = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Menu")
+                    }
+                    DropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            onClick = {
+                                menuExpanded = false
+                                onExportCartClick()
+                                showCartIdDialog = true
+                            },
+                            text = { Text("Exportar Carrinho") }
+                        )
+                        DropdownMenuItem(
+                            onClick = {
+                                menuExpanded = false
+                                showImportDialog = true
+                            },
+                            text = { Text("Importar Carrinho") }
+                        )
+                    }
+                }
+            )
+        },
         bottomBar = {
             Column(
                 modifier = Modifier
@@ -40,7 +86,6 @@ fun CartScreen(
                     .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Total e botão de pagamento
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -81,6 +126,53 @@ fun CartScreen(
             items(cartItems) { cartItem ->
                 CartItemCard(cartItem)
             }
+        }
+
+        if (showImportDialog) {
+            AlertDialog(
+                onDismissRequest = { showImportDialog = false },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showImportDialog = false
+                        if (importCartId.isNotEmpty()) {
+                            onImportCartClick(importCartId.toIntOrNull() ?: 0)
+                        }
+                    }) {
+                        Text("Importar")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showImportDialog = false }) {
+                        Text("Cancelar")
+                    }
+                },
+                title = { Text("Importar Carrinho") },
+                text = {
+                    Column {
+                        Text("Insira o código do carrinho a importar:")
+                        TextField(
+                            value = importCartId,
+                            onValueChange = { importCartId = it },
+                            label = { Text("Código do Carrinho") }
+                        )
+                    }
+                }
+            )
+        }
+
+
+        // Exibe o diálogo com o CartId
+        if (showCartIdDialog) {
+            AlertDialog(
+                onDismissRequest = { showCartIdDialog = false },
+                confirmButton = {
+                    TextButton(onClick = { showCartIdDialog = false }) {
+                        Text("Fechar")
+                    }
+                },
+                title = { Text("Exportar Carrinho") },
+                text = { Text("Codigo para expotar: $cartId") }
+            )
         }
     }
 }

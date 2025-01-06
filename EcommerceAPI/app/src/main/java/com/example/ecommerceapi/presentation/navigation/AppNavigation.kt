@@ -26,6 +26,7 @@ import com.example.ecommerceapi.presentation.menu.ComprarScreen
 import com.example.ecommerceapi.presentation.menu.ProductsScreen
 import com.example.ecommerceapi.presentation.menu.ProductDetailsScreen
 import com.example.ecommerceapi.presentation.menu.CartScreen
+import com.example.ecommerceapi.presentation.menu.ExportedCartScreen
 import com.google.firebase.auth.FirebaseAuth
 
 @Composable
@@ -107,6 +108,7 @@ fun AppNavigation(navController: NavHostController) {
             val firebaseHelper = FirebaseHelper()
             val cartProducts = remember { mutableStateOf<List<CartProduct>>(emptyList()) }
             val totalPrice = remember { mutableStateOf(0.0) }
+            val cartId = remember { mutableStateOf(0) }
             val currentUserEmail = FirebaseAuth.getInstance().currentUser?.email
 
             if (currentUserEmail.isNullOrEmpty()) {
@@ -164,9 +166,78 @@ fun AppNavigation(navController: NavHostController) {
             CartScreen(
                 cartItems = cartProducts.value,
                 totalPrice = totalPrice.value,
-                onCheckoutClick = {
-                    // Navegação para o processo de pagamento ou confirmação
+                cartId = cartId.value,
+                onCheckoutClick = { /* Navegação para pagamento */ },
+                onBackClick = { navController.popBackStack() },
+                onExportCartClick = {
+                    firebaseHelper.getUserCartId(
+                        userEmail = currentUserEmail,
+                        onSuccess = { id ->
+                            if (id != null) {
+                                cartId.value = id // Atualiza o valor do cartId
+                                Log.d("ExportCart", "Carrinho exportado com ID: ${cartId.value}")
+                            }
+                        },
+                        onFailure = { exception ->
+                            Log.e("ExportCart", "Erro ao exportar carrinho: ${exception.message}")
+                        }
+                    )
+                },
+                onImportCartClick = { cartIdToImport ->
+                    navController.navigate("exportedCart/$cartIdToImport")
                 }
+            )
+        }
+
+        composable("exportedCart/{cartId}") { backStackEntry ->
+            val cartId = backStackEntry.arguments?.getString("cartId")?.toIntOrNull() ?: 0
+            val exportedCartItems = remember { mutableStateOf<List<CartProduct>>(emptyList()) }
+            val firebaseHelper = FirebaseHelper()
+
+            // Busca os itens do carrinho exportado
+            LaunchedEffect(cartId) {
+                firebaseHelper.getCartProducts(
+                    cartId = cartId,
+                    onSuccess = { products ->
+                        exportedCartItems.value = products
+                    },
+                    onFailure = { exception ->
+                        Log.e("ExportedCart", "Erro ao carregar carrinho exportado: ${exception.message}")
+                    }
+                )
+            }
+
+            ExportedCartScreen(
+                exportedCartItems = exportedCartItems.value,
+                onImportClick = {
+                    val currentUserEmail = FirebaseAuth.getInstance().currentUser?.email
+                    if (!currentUserEmail.isNullOrEmpty()) {
+                        firebaseHelper.getUserCartId(
+                            userEmail = currentUserEmail,
+                            onSuccess = { mainCartId ->
+                                exportedCartItems.value.forEach { cartItem ->
+                                    firebaseHelper.addProductToCart(
+                                        cartId = mainCartId ?: 0,
+                                        productId = cartItem.product.id,
+                                        size = cartItem.size,
+                                        quantity = cartItem.quantity,
+                                        onSuccess = {
+                                            Log.d("Import", "Produto adicionado ao carrinho principal")
+                                        },
+                                        onFailure = { exception ->
+                                            Log.e("Import", "Erro ao adicionar produto: ${exception.message}")
+                                        }
+                                    )
+                                }
+                                navController.popBackStack() // Voltar para o carrinho principal
+                            },
+                            onFailure = { exception ->
+                                Log.e("Import", "Erro ao obter carrinho principal: ${exception.message}")
+                            }
+                        )
+                    }
+                },
+                onBackClick = { navController.popBackStack() }
             )
         }
 
