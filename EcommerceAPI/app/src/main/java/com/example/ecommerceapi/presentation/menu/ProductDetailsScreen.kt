@@ -30,6 +30,7 @@ fun ProductDetailsScreen(
     var productQuantities by remember { mutableStateOf<List<Pair<Int, Int>>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var selectedSize by remember { mutableStateOf<Int?>(null) }
+    var selectedQuantity by remember { mutableStateOf(1) }
     var imageUrl by remember { mutableStateOf("") }
 
     // Busca os tamanhos disponíveis no Firestore
@@ -145,6 +146,39 @@ fun ProductDetailsScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
+                    // Exibir opção para escolher quantidade
+                    Text(
+                        text = "Escolha a quantidade:",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Black
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        IconButton(
+                            onClick = { if (selectedQuantity > 1) selectedQuantity-- },
+                            enabled = selectedQuantity > 1
+                        ) {
+                            Text("-", style = MaterialTheme.typography.bodyLarge)
+                        }
+                        Text(
+                            text = "$selectedQuantity",
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        )
+                        IconButton(
+                            onClick = { if (selectedQuantity < 10) selectedQuantity++ },
+                            enabled = selectedQuantity < 10
+                        ) {
+                            Text("+", style = MaterialTheme.typography.bodyLarge)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Botão de adicionar ao carrinho
                     Button(
                         onClick = {
                             selectedSize?.let { size ->
@@ -159,9 +193,9 @@ fun ProductDetailsScreen(
                                                 cartId = cartId,
                                                 productId = productId,
                                                 size = size,
-                                                quantity = 1,
+                                                quantity = selectedQuantity,
                                                 onSuccess = {
-                                                    Log.d("Carrinho", "Produto adicionado com sucesso: $productId, Tamanho: $size")
+                                                    Log.d("Carrinho", "Produto adicionado com sucesso: $productId, Tamanho: $size, Quantidade: $selectedQuantity")
                                                 },
                                                 onFailure = { exception ->
                                                     Log.e("Carrinho", "Erro ao adicionar produto ao carrinho: ${exception.message}")
@@ -176,7 +210,7 @@ fun ProductDetailsScreen(
                                                         cartId = newCartId,
                                                         productId = productId,
                                                         size = size,
-                                                        quantity = 1,
+                                                        quantity = selectedQuantity,
                                                         onSuccess = {
                                                             Log.d("Carrinho", "Produto adicionado com sucesso ao novo carrinho.")
                                                         },

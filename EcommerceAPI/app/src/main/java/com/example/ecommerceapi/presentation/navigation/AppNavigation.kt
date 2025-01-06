@@ -3,6 +3,7 @@ package com.example.ecommerceapi.presentation.navigation
 import android.util.Log
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Shop
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -27,6 +28,7 @@ import com.example.ecommerceapi.presentation.menu.ProductsScreen
 import com.example.ecommerceapi.presentation.menu.ProductDetailsScreen
 import com.example.ecommerceapi.presentation.menu.CartScreen
 import com.example.ecommerceapi.presentation.menu.ExportedCartScreen
+import com.example.ecommerceapi.presentation.menu.PaymentForm
 import com.google.firebase.auth.FirebaseAuth
 
 @Composable
@@ -74,11 +76,6 @@ fun AppNavigation(navController: NavHostController) {
             )
         }
 
-
-        // Tela de Perfil
-        composable("perfil") {
-
-        }
 
         composable("products/{category}") { backStackEntry ->
             val category = backStackEntry.arguments?.getString("category") ?: ""
@@ -167,7 +164,7 @@ fun AppNavigation(navController: NavHostController) {
                 cartItems = cartProducts.value,
                 totalPrice = totalPrice.value,
                 cartId = cartId.value,
-                onCheckoutClick = { /* Navegação para pagamento */ },
+                onCheckoutClick = { navController.navigate("paymentForm") },
                 onBackClick = { navController.popBackStack() },
                 onExportCartClick = {
                     firebaseHelper.getUserCartId(
@@ -185,7 +182,23 @@ fun AppNavigation(navController: NavHostController) {
                 },
                 onImportCartClick = { cartIdToImport ->
                     navController.navigate("exportedCart/$cartIdToImport")
+                },
+                onClearCartClick = {
+                    if (cartId.value != 0) {
+                        firebaseHelper.clearCart(
+                            cartId = cartId.value,
+                            onSuccess = {
+                                cartProducts.value = emptyList()
+                                totalPrice.value = 0.0
+                                Log.d("Carrinho", "Carrinho limpo com sucesso.")
+                            },
+                            onFailure = { exception ->
+                                Log.e("Carrinho", "Erro ao limpar carrinho: ${exception.message}")
+                            }
+                        )
+                    }
                 }
+
             )
         }
 
@@ -241,6 +254,36 @@ fun AppNavigation(navController: NavHostController) {
             )
         }
 
+        composable("paymentForm") {
+            PaymentForm(
+                onPaymentConfirm = {
+                    val firebaseHelper = FirebaseHelper()
+                    val currentUserEmail = FirebaseAuth.getInstance().currentUser?.email
+
+                    if (!currentUserEmail.isNullOrEmpty()) {
+                        firebaseHelper.getUserCartId(
+                            userEmail = currentUserEmail,
+                            onSuccess = { cartId ->
+                                if (cartId != null) {
+                                    // Remove todos os produtos do carrinho
+                                    firebaseHelper.clearCart(cartId = cartId, onSuccess = {
+                                        Log.d("Pagamento", "Carrinho limpo com sucesso.")
+                                        navController.popBackStack()
+                                    }, onFailure = { exception ->
+                                        Log.e("Pagamento", "Erro ao limpar carrinho: ${exception.message}")
+                                    })
+                                }
+                            },
+                            onFailure = { exception ->
+                                Log.e("Pagamento", "Erro ao obter CartID: ${exception.message}")
+                            }
+                        )
+                    }
+                },
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
     }
 }
 
@@ -257,7 +300,7 @@ fun BottomNavigationBar(
                 onTabSelected("Comprar")
                 navController.navigate("comprar")
             },
-            icon = { Icon(Icons.Default.ShoppingCart, contentDescription = "Comprar") },
+            icon = { Icon(Icons.Default.Shop, contentDescription = "Comprar") },
             label = { Text("Comprar") }
         )
         NavigationBarItem(
@@ -268,15 +311,6 @@ fun BottomNavigationBar(
             },
             icon = { Icon(Icons.Default.ShoppingCart, contentDescription = "Carrinho") },
             label = { Text("Carrinho") }
-        )
-        NavigationBarItem(
-            selected = selectedTab == "Perfil",
-            onClick = {
-                onTabSelected("Perfil")
-                navController.navigate("perfil")
-            },
-            icon = { Icon(Icons.Default.Person, contentDescription = "Perfil") },
-            label = { Text("Perfil") }
         )
     }
 }

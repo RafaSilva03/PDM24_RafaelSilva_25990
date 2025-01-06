@@ -287,58 +287,23 @@ class FirebaseHelper {
             }
     }
 
-    fun importSharedCart(
-        sharedCartId: String,
-        onSuccess: (List<CartProduct>) -> Unit,
-        onFailure: (Exception) -> Unit
-    ) {
+    fun clearCart(cartId: Int, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) {
         val db = FirebaseFirestore.getInstance()
         db.collection("CartProducts")
-            .whereEqualTo("CartId", sharedCartId)
+            .whereEqualTo("CartId", cartId)
             .get()
             .addOnSuccessListener { querySnapshot ->
-                val cartProducts = mutableListOf<CartProduct>()
-                val productIds = querySnapshot.documents.mapNotNull { it.getLong("ProductId")?.toInt() }
-
-                if (productIds.isNotEmpty()) {
-                    db.collection("Products")
-                        .whereIn("ProductID", productIds)
-                        .get()
-                        .addOnSuccessListener { productsSnapshot ->
-                            val productsMap = productsSnapshot.documents.associateBy(
-                                { it.getLong("ProductID")!!.toInt() },
-                                { document ->
-                                    Product(
-                                        id = document.getLong("ProductID")!!.toInt(),
-                                        name = document.getString("Name") ?: "",
-                                        imageUrl = document.getString("ImageUrl") ?: "",
-                                        category = document.getString("Category") ?: "",
-                                        brand = document.getString("Brand") ?: ""
-                                    )
-                                }
-                            )
-
-                            querySnapshot.documents.forEach { document ->
-                                val productId = document.getLong("ProductId")!!.toInt()
-                                val product = productsMap[productId]
-                                if (product != null) {
-                                    cartProducts.add(
-                                        CartProduct(
-                                            product = product,
-                                            size = document.getLong("Size")?.toInt() ?: 0,
-                                            quantity = document.getLong("Quantity")?.toInt() ?: 0
-                                        )
-                                    )
-                                }
-                            }
-                            onSuccess(cartProducts)
-                        }
-                        .addOnFailureListener { onFailure(it) }
-                } else {
-                    Log.w("FirebaseHelper", "Nenhum produto no carrinho compartilhado.")
-                    onSuccess(emptyList())
+                val batch = db.batch()
+                querySnapshot.documents.forEach { document ->
+                    batch.delete(document.reference)
                 }
+                batch.commit()
+                    .addOnSuccessListener { onSuccess() }
+                    .addOnFailureListener { exception -> onFailure(exception) }
             }
-            .addOnFailureListener { onFailure(it) }
+            .addOnFailureListener { exception ->
+                onFailure(exception)
+            }
     }
+
 }

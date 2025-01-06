@@ -34,7 +34,8 @@ fun CartScreen(
     cartId: Int,
     onBackClick: () -> Unit,
     onExportCartClick: () -> Unit,
-    onImportCartClick: (Int) -> Unit
+    onImportCartClick: (Int) -> Unit,
+    onClearCartClick: () -> Unit
 ) {
     var showImportDialog by remember { mutableStateOf(false) }
     var showCartIdDialog by remember { mutableStateOf(false) }
@@ -73,6 +74,13 @@ fun CartScreen(
                                 showImportDialog = true
                             },
                             text = { Text("Importar Carrinho") }
+                        )
+                        DropdownMenuItem(
+                            onClick = {
+                                menuExpanded = false
+                                onClearCartClick() // Chama a função de limpar o carrinho
+                            },
+                            text = { Text("Limpar Carrinho") }
                         )
                     }
                 }

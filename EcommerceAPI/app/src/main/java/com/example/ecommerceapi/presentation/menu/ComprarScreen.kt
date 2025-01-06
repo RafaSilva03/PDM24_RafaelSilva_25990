@@ -78,12 +78,6 @@ fun HeaderSection() {
             text = "Comprar",
             style = MaterialTheme.typography.headlineMedium
         )
-        IconButton(onClick = { /* Ação de busca */ }) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_search),
-                contentDescription = "Buscar"
-            )
-        }
     }
 }
 
